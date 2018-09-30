@@ -181,6 +181,17 @@ EvaluateTrees <- function(trees, hamming.disks) {
   return(results)
 }
 
+TrainAndEvaluate <- function(instance, max.ham = 5, fig.write = FALSE, fig.id = 0, fig.dir = "plots", fig.prefix = 'plot-', fig.ext = 'png', fig.width = 500) {
+  hamming.rings <- GetHammingRings(instance, max.ham)
+  hamming.disks <- GetHammingDisks(hamming.rings)
+  trees <- TrainTrees(hamming.disks)
+  results <- EvaluateTrees(trees, hamming.rings)
+  PlotResults(results)
+  if (fig.write == TRUE) {
+    dev.print(png, paste(fig.dir, "/", fig.prefix, fig.id, '.', fig.ext, sep = ""), width = fig.width)
+  }
+}
+
 PlotResults <- function(results) {
   # args: a dataframe (results), with columns train.d, accuracy and test.d
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
@@ -239,14 +250,12 @@ random.forest <- randomForest::randomForest(formula=attr(dataset, "formula"), da
 rf.predictions <- predict(random.forest, dataset[-training.data,], type="class")
 rf.accuracy <- mean(rf.predictions == dataset[,attr(dataset, "class.col")][-training.data])
 
-instance <- dataset[1,]
 max.ham <- 5
 
-hamming.rings <- GetHammingRings(instance, max.ham)
-hamming.disks <- GetHammingDisks(hamming.rings)
-trees <- TrainTrees(hamming.disks)
-results <- EvaluateTrees(trees, hamming.rings)
-PlotResults(results)
+for (num in 1:12) {
+  instance <- dataset[num,]
+  TrainAndEvaluate(instance, fig.write = TRUE, fig.prefix = "plot-preset-", fig.id = num)
+}
 
 ## get training.data with only one label to test handling of that case
 # training.data <- hamming.disks[[i]][hamming.disks[[i]][,1] == unique(hamming.disks[[i]][,1])[[1]],]
