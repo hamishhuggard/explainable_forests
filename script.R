@@ -195,6 +195,7 @@ TrainAndEvaluate <- function(instance, max.ham = 5, fig.write = FALSE, fig.id = 
 PlotResults <- function(results) {
   # args: a dataframe (results), with columns train.d, accuracy and test.d
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
+  results[1, ] <- factor(results[1, ], levels=c('1','2','3','4','5'), ordered=TRUE)
   plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d))
   print(plt)
