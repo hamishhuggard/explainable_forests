@@ -184,7 +184,7 @@ instance = dataset[1,]
 max.ham = 5
 
 hamming.rings <- GetHammingRings(instance, max.ham)
-hamming.circles <- GetHammingDisks(hamming.rings)
-trees <- TrainTrees(hamming.circles)
-results <- EvaluateTrees(trees, hamming.circles)
+hamming.disks <- GetHammingDisks(hamming.rings)
+trees <- TrainTrees(hamming.disks)
+results <- EvaluateTrees(trees, hamming.disks)
 PlotResults(results)
