@@ -30,12 +30,12 @@ UptoHamming <- function(row, max.ham) {
   all.instances
 }
 
-HammingOld <- function(row, distance = 1, classification.col = 1) {
+HammingOld <- function(row, distance = 1) {
   # args: an instance (row),
   #       a hamming distance (distance), 
-  #       the column containing the classification (asumes labeled data)
   # returns: a dataframe of all posible instances with hamming distance from row == distance
-  # eg: HammingOld(dataset[1, ], 5, 1)
+  # eg: HammingOld(dataset[1, ], 5)
+  classification.col <- attr(row, "class.col")
   options <- lapply(row, levels)
   perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
   perturbed.dataframe <- data.frame(row)
@@ -54,12 +54,12 @@ HammingOld <- function(row, distance = 1, classification.col = 1) {
   perturbed.dataframe
 }
 
-Hamming <- function(row, distance = 1, classification.col = 1) {
+Hamming <- function(row, distance = 1) {
   # args: an instance (row),
   #       a hamming distance (distance),
-  #       the column containing the classification (asumes labeled data)
   # returns: a dataframe of all posible instances with hamming distance from row == distance
-  # eg: Hamming(dataset[1, ], 5, 1)
+  # eg: Hamming(dataset[1, ], 5)
+  classification.col <- attr(row, "class.col")
   perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
   options <- lapply(row, levels)
   # Remove values which occur in row
