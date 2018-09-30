@@ -12,11 +12,11 @@ library(ggplot2) # for ggplot
 
 GetHammingDistance <- function(row.1, row.2) {
   # args: two instances (rows)
-  # returns: the hamming distance between two instances 
+  # returns: the hamming distance between two instances
   # eg: GetHammingDistance(dataset[1, ], dataset[3, ])
   cols <- 2:(ncol(row.1))
-  length(which(row.1[, cols] != row.2[, cols])) 
-} 
+  length(which(row.1[, cols] != row.2[, cols]))
+}
 
 
 UptoHamming <- function(row, max.ham) {
@@ -26,13 +26,13 @@ UptoHamming <- function(row, max.ham) {
   all.instances <- Hamming(row, 1)
   for (i in 2:max.ham) {
     all.instances <- rbind(all.instances, Hamming(row, i))
-  } 
+  }
   all.instances
 }
 
 HammingOld <- function(row, distance = 1) {
   # args: an instance (row),
-  #       a hamming distance (distance), 
+  #       a hamming distance (distance),
   # returns: a dataframe of all posible instances with hamming distance from row == distance
   # eg: HammingOld(dataset[1, ], 5)
   classification.col <- attr(row, "class.col")
@@ -78,7 +78,10 @@ Hamming <- function(row, distance = 1) {
 }
 
 AddClassifications <- function(new.dataset) {
+  # args: a dataset
   # globals: random.forest, dataset
+  # returns: a dataset with labels predicted by random.forest
+  # eg: AddClassifications(test.data)
   class.col <- attr(dataset, "class.col")
   rf.predictions <- predict(random.forest, new.dataset, type="class")
   new.dataset[,class.col] <- rf.predictions
@@ -86,6 +89,11 @@ AddClassifications <- function(new.dataset) {
 }
 
 GetHammingRings <- function(instance, max.ham) {
+  # args: a row from a dataset (instance)
+  #       a hamming distance limit (max.ham)
+  # returns: a list with max.ham items, where list[[i]]
+  #   is a dataframe containing all instances exactly
+  #   Hamming distance i from instance
   hamming.rings <- list()
   for (i in 1:max.ham) {
     h <- Hamming(instance, distance = i)
@@ -96,6 +104,12 @@ GetHammingRings <- function(instance, max.ham) {
 }
 
 GetHammingDisks <- function(hamming.rings) {
+  # args: a list (hamming.rings) where list[[i]]
+  #   is a dataframe containing all instances exactly
+  #   Hamming distance i from instance
+  # returns: a list of length(hamming.rings), where list[[i]]
+  #   is a dataframe containing all instances at most
+  #   Hamming distance i from instance
   hamming.disks <- list()
   for (i in 1:length(hamming.rings)) {
     training.data <- plyr::rbind.fill(hamming.rings[1:i])
@@ -105,7 +119,13 @@ GetHammingDisks <- function(hamming.rings) {
 }
 
 TrainTrees <- function(hamming.disks) {
+  # args: a list (hamming.disks), where list[[i]]
+  #   is a dataframe containing all instances at most
+  #   Hamming distance i from an initial instance
   # globals: dataset
+  # returns: a list of length(hamming.disks), where list[[i]]
+  #   is either a rpart tree trained on hamming.disks[[i]], or
+  #   a factor (if hamming.disks[[i]] has only one classification)
   class.col <- attr(dataset, "class.col")
   class.formula <- attr(dataset, "formula")
   trees <- list()
@@ -121,7 +141,14 @@ TrainTrees <- function(hamming.disks) {
 }
 
 EvaluateTrees <- function(trees, hamming.disks) {
+  # args: a list (hamming.disks), where list[[i]]
+  #   is a dataframe containing all instances at most
+  #   Hamming distance i from an initial instance
+  #       a list (trees), where list[[i]]
+  #   is either a rpart tree trained on hamming.disks[[i]], or
+  #   a factor (if hamming.disks[[i]] has only one classification)
   # globals: dataset
+  # returns: a dataframe of results with columns train.d, accuracy and test.d
   class.col <- attr(dataset, "class.col")
   results <- data.frame(train.d=0, test.d=0, accuracy=0)
   row.num <- 1
@@ -146,7 +173,9 @@ EvaluateTrees <- function(trees, hamming.disks) {
 }
 
 PlotResults <- function(results) {
-  plt <- ggplot(results) + 
+  # args: a dataframe (results), with columns train.d, accuracy and test.d
+  # returns: a ggplot of accuracy against train.d, with a line for each test.d
+  plt <- ggplot(results) +
     geom_line(aes(results$train.d, results$accuracy), group=results$test.d)
   print(plt)
 }
