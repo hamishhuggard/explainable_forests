@@ -229,7 +229,7 @@ max.ham <- 5
 hamming.rings <- GetHammingRings(instance, max.ham)
 hamming.disks <- GetHammingDisks(hamming.rings)
 trees <- TrainTrees(hamming.disks)
-results <- EvaluateTrees(trees, hamming.disks)
+results <- EvaluateTrees(trees, hamming.rings)
 PlotResults(results)
 
 ## get training.data with only one label to test handling of that case
