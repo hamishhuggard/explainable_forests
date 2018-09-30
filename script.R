@@ -150,10 +150,15 @@ EvaluateTrees <- function(trees, hamming.disks) {
   # globals: dataset
   # returns: a dataframe of results with columns train.d, accuracy and test.d
   class.col <- attr(dataset, "class.col")
-  results <- data.frame(train.d=0, test.d=0, accuracy=0)
+  results <- data.frame(train.d=integer(0), test.d=integer(0), accuracy=double(0))
   row.num <- 1
   for (i in 1:length(hamming.disks)) {
     tree <- trees[[i]]
+    tree.prediction <- predict(tree, instance, type="class")
+    rf.prediction <- predict(random.forest, instance, type="class")
+    tree.accuracy <- as.integer(tree.prediction == rf.prediction)
+    results[row.num, ] <- c(i, 0, tree.accuracy)
+    row.num <- row.num+1
     for (j in 1:length(hamming.disks)) {
       test.data <- hamming.disks[[j]]
       if (class(tree) == "rpart") {  # successfully trained trees have class rpart
