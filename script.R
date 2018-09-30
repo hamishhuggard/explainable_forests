@@ -175,8 +175,8 @@ EvaluateTrees <- function(trees, hamming.disks) {
 PlotResults <- function(results) {
   # args: a dataframe (results), with columns train.d, accuracy and test.d
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
-  plt <- ggplot(results) +
-    geom_line(aes(results$train.d, results$accuracy), group=results$test.d)
+  plt <- ggplot(results, aes(ymin = 0.0, xmin = 1.0)) +
+    geom_line(aes(test.d, accuracy, colour = train.d, group = train.d))
   print(plt)
 }
 
