@@ -91,7 +91,7 @@ GetHammingRings <- function(instance, max.ham) {
 }
 
 GetHammingDisks <- function(hamming.rings) {
-  hamming.diskss <- list()
+  hamming.disks <- list()
   for (i in 1:length(hamming.rings)) {
     training.data <- plyr::rbind.fill(hamming.rings[1:i])
     hamming.disks[[i]] <- training.data
@@ -138,12 +138,12 @@ EvaluateTrees <- function(trees, hamming.disks) {
 
 PlotResults <- function(results) {
   plt <- ggplot(results) + 
-    geom_line(aes(train.d, accuracy), group=test.d)
+    geom_line(aes(results$train.d, results$accuracy), group=results$test.d)
   print(plt)
 }
 
-GetDataset <- function(url_string, class.col = 1) {
-  dataset <- read.csv(url(url_string))
+GetDataset <- function(url_string, class.col = 1, header = FALSE) {
+  dataset <- read.csv(url(url_string), header = header)
   dataset <- data.frame(lapply(dataset, factor))  # coerce columns into factors
   attr(dataset, "class.col") <- class.col
   attr(dataset, "class.colname") <- colnames(dataset)[class.col]
@@ -169,7 +169,7 @@ GetTrainingData <- function(dataset, sample.type = "random") {
 ## load the dataset
 
 url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data"
-dataset = GetDataset(url_string, headers=FALSE)
+dataset = GetDataset(url_string, header = FALSE)
 
 training.data <- GetTrainingData(dataset, "random")
 
@@ -184,7 +184,7 @@ instance = dataset[1,]
 max.ham = 5
 
 hamming.rings <- GetHammingRings(instance, max.ham)
-hamming.circles <- GetHammingCircles(hamming.rings)
+hamming.circles <- GetHammingDisks(hamming.rings)
 trees <- TrainTrees(hamming.circles)
 results <- EvaluateTrees(trees, hamming.circles)
 PlotResults(results)
