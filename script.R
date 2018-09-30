@@ -10,32 +10,32 @@ library(ggplot2) # for ggplot
 
 ## functions
 
-get.hamming.distance <- function(row.1, row.2) {
+GetHammingDistance <- function(row.1, row.2) {
   # args: two instances (rows)
   # returns: the hamming distance between two instances 
-  # eg: get.hamming.distance(dataset[1, ], dataset[3, ])
+  # eg: GetHammingDistance(dataset[1, ], dataset[3, ])
   cols <- 2:(ncol(row.1))
   length(which(row.1[, cols] != row.2[, cols])) 
 } 
 
 
-upto.hamming <- function(row, max.ham) {
+UptoHamming <- function(row, max.ham) {
   # args: an instance (row) and a distance limit (max.ham):
   # returns: dataframe of all possible instances with hamming distance from row < max.ham
-  # eg: upto.hamming(dataset[1, ], 5)
-  all.instances <- hamming(row, 1)
+  # eg: UptoHamming(dataset[1, ], 5)
+  all.instances <- Hamming(row, 1)
   for (i in 2:max.ham) {
-    all.instances <- rbind(all.instances, hamming(row, i))
+    all.instances <- rbind(all.instances, Hamming(row, i))
   } 
   all.instances
 }
 
-hamming.old <- function(row, distance = 1, classification.col = 1) {
+HammingOld <- function(row, distance = 1, classification.col = 1) {
   # args: an instance (row),
   #       a hamming distance (distance), 
   #       the column containing the classification (asumes labeled data)
   # returns: a dataframe of all posible instances with hamming distance from row == distance
-  # eg: hamming(dataset[1, ], lapply(dataset, levels), 2, 1)
+  # eg: HammingOld(dataset[1, ], 5, 1)
   options <- lapply(row, levels)
   perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
   perturbed.dataframe <- data.frame(row)
@@ -54,7 +54,12 @@ hamming.old <- function(row, distance = 1, classification.col = 1) {
   perturbed.dataframe
 }
 
-hamming <- function(row, distance = 1, classification.col = 1) {
+Hamming <- function(row, distance = 1, classification.col = 1) {
+  # args: an instance (row),
+  #       a hamming distance (distance),
+  #       the column containing the classification (asumes labeled data)
+  # returns: a dataframe of all posible instances with hamming distance from row == distance
+  # eg: Hamming(dataset[1, ], 5, 1)
   perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
   options <- lapply(row, levels)
   # Remove values which occur in row
@@ -83,7 +88,7 @@ AddClassifications <- function(new.dataset) {
 GetHammingRings <- function(instance, max.ham) {
   hamming.rings <- list()
   for (i in 1:max.ham) {
-    h <- hamming(instance, distance = i)
+    h <- Hamming(instance, distance = i)
     h <- AddClassifications(h)
     hamming.rings[[i]] <- h
   }
