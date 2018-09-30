@@ -169,7 +169,7 @@ GetTrainingData <- function(dataset, sample.type = "random") {
 ## load the dataset
 
 url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data"
-dataset = GetDataset(url_string)
+dataset = GetDataset(url_string, headers=FALSE)
 
 training.data <- GetTrainingData(dataset, "random")
 
