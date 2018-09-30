@@ -107,7 +107,7 @@ TrainTrees <- function(hamming.disks) {
   for (i in 1:length(hamming.disks)) {
     training.data <- hamming.disks[[i]]
     if (length(unique(training.data[,class.col])) == 1) {
-      trees[[i]] = NULL
+      trees[[i]] = unique(training.data[,class.col]) # if there was only one label, store that
     } else {
       trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class")
     }
@@ -122,14 +122,17 @@ EvaluateTrees <- function(trees, hamming.disks) {
   for (i in 1:length(hamming.disks)) {
     tree = trees[[i]]
     for (j in 1:length(hamming.disks)) {
-      if (!is.null(tree)) {
-        test.data <- hamming.disks[[j]]
+      test.data <- hamming.disks[[j]]
+      if (class(tree) == "rpart") {  # successfully trained trees have class rpart
         tree.predictions <- predict(tree, test.data, type="class")
         tree.accuracy <- mean(tree.predictions == test.data[,class.col])
-        results[row.num, ] <- c(i, j, tree.accuracy) 
+      } else if (class(tree) == "factor") {  # if there was only one label, tree is a factor
+        tree.accuracy <- mean(tree == test.data[,class.col])
       } else {
-        results[row.num, ] <- c(i, j, 1)
+        print ("unexpected class for tree in EvaluateTrees")
+        print (class(tree))
       }
+      results[row.num, ] <- c(i, j, tree.accuracy)
       row.num <- row.num+1
     }
   }
@@ -188,3 +191,6 @@ hamming.disks <- GetHammingDisks(hamming.rings)
 trees <- TrainTrees(hamming.disks)
 results <- EvaluateTrees(trees, hamming.disks)
 PlotResults(results)
+
+## get training.data with only one label to test handling of that case
+# training.data <- hamming.disks[[i]][hamming.disks[[i]][,1] == unique(hamming.disks[[i]][,1])[[1]],]
