@@ -181,23 +181,26 @@ EvaluateTrees <- function(trees, hamming.disks) {
   return(results)
 }
 
-TrainAndEvaluate <- function(instance, max.ham = 5, fig.write = FALSE, fig.id = 0, fig.dir = "plots", fig.prefix = 'plot-', fig.ext = 'png', fig.width = 500) {
+TrainAndEvaluate <- function(instance, max.ham = 5, fig.write = FALSE, fig.id = 0, fig.dir = "plots", fig.prefix = 'plot-', fig.ext = 'png', fig.width = 500, instance.n = 1) {
   hamming.rings <- GetHammingRings(instance, max.ham)
   hamming.disks <- GetHammingDisks(hamming.rings)
   trees <- TrainTrees(hamming.disks)
   results <- EvaluateTrees(trees, hamming.rings)
-  PlotResults(results)
+  PlotResults(results, instance.n)
   if (fig.write == TRUE) {
     dev.print(png, paste(fig.dir, "/", fig.prefix, fig.id, '.', fig.ext, sep = ""), width = fig.width)
   }
 }
 
-PlotResults <- function(results) {
+PlotResults <- function(results, instance.n=1) {
   # args: a dataframe (results), with columns train.d, accuracy and test.d
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
-  results[1, ] <- factor(results[1, ], levels=c('1','2','3','4','5'), ordered=TRUE)
+  results[, 1] <- factor(results[, 1], levels=c('1','2','3','4','5'), ordered=TRUE)
   plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
-    geom_line(aes(test.d, accuracy, colour = train.d, group = train.d))
+    geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
+    geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
+    labs(title = paste("Instance",instance.n), x = "Training HD", 
+         y = "Accuracy (%)", color = "Testing HD")
   print(plt)
 }
 
@@ -255,7 +258,7 @@ max.ham <- 5
 
 for (num in 1:12) {
   instance <- dataset[num,]
-  TrainAndEvaluate(instance, fig.write = TRUE, fig.prefix = "plot-preset-", fig.id = num)
+  TrainAndEvaluate(instance, fig.write = TRUE, fig.prefix = "plot-preset-", fig.id = num, instance.n=num)
 }
 
 ## get training.data with only one label to test handling of that case
