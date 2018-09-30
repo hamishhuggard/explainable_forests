@@ -55,7 +55,7 @@ hamming.old <- function(row, distance = 1, classification.col = 1) {
 }
 
 hamming <- function(row, distance = 1, classification.col = 1) {
-  perturb.cols = combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
+  perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
   options <- lapply(row, levels)
   # Remove values which occur in row
   for (i in 1:length(row)) {
@@ -74,7 +74,7 @@ hamming <- function(row, distance = 1, classification.col = 1) {
 
 AddClassifications <- function(new.dataset) {
   # globals: random.forest, dataset
-  class.col = attr(dataset, "class.col")
+  class.col <- attr(dataset, "class.col")
   rf.predictions <- predict(random.forest, new.dataset, type="class")
   new.dataset[,class.col] <- rf.predictions
   return(new.dataset)
@@ -107,7 +107,7 @@ TrainTrees <- function(hamming.disks) {
   for (i in 1:length(hamming.disks)) {
     training.data <- hamming.disks[[i]]
     if (length(unique(training.data[,class.col])) == 1) {
-      trees[[i]] = unique(training.data[,class.col]) # if there was only one label, store that
+      trees[[i]] <- unique(training.data[,class.col]) # if there was only one label, store that
     } else {
       trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class")
     }
@@ -116,11 +116,12 @@ TrainTrees <- function(hamming.disks) {
 }
 
 EvaluateTrees <- function(trees, hamming.disks) {
+  # globals: dataset
   class.col <- attr(dataset, "class.col")
   results <- data.frame(train.d=0, test.d=0, accuracy=0)
-  row.num = 1
+  row.num <- 1
   for (i in 1:length(hamming.disks)) {
-    tree = trees[[i]]
+    tree <- trees[[i]]
     for (j in 1:length(hamming.disks)) {
       test.data <- hamming.disks[[j]]
       if (class(tree) == "rpart") {  # successfully trained trees have class rpart
@@ -172,7 +173,7 @@ GetTrainingData <- function(dataset, sample.type = "random") {
 ## load the dataset
 
 url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data"
-dataset = GetDataset(url_string, header = FALSE)
+dataset <- GetDataset(url_string, header = FALSE)
 
 training.data <- GetTrainingData(dataset, "random")
 
@@ -183,8 +184,8 @@ random.forest <- randomForest::randomForest(formula=attr(dataset, "formula"), da
 rf.predictions <- predict(random.forest, dataset[-training.data,], type="class")
 rf.accuracy <- mean(rf.predictions == dataset[,attr(dataset, "class.col")][-training.data])
 
-instance = dataset[1,]
-max.ham = 5
+instance <- dataset[1,]
+max.ham <- 5
 
 hamming.rings <- GetHammingRings(instance, max.ham)
 hamming.disks <- GetHammingDisks(hamming.rings)
