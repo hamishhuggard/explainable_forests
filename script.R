@@ -199,8 +199,8 @@ PlotResults <- function(results, instance.n=1) {
   plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
-    labs(title = paste("Instance",instance.n), x = "Training HD", 
-         y = "Accuracy (%)", color = "Testing HD")
+    labs(title = paste("Instance",instance.n), x = "Testing HD", 
+         y = "Accuracy (%)", color = "Training HD")
   print(plt)
 }
 
