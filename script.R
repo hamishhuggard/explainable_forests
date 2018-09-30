@@ -54,7 +54,7 @@ hamming.old <- function(row, distance = 1, classification.col = 1) {
   perturbed.dataframe
 }
 
-hamming = function(row, distance = 1, classification.col = 1) {
+hamming <- function(row, distance = 1, classification.col = 1) {
   perturb.cols = combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
   options <- lapply(row, levels)
   # Remove values which occur in row
@@ -90,22 +90,22 @@ GetHammingRings <- function(instance, max.ham) {
   return(hamming.rings)
 }
 
-GetHammingCircles <- function(hamming.rings) {
-  hamming.circles <- list()
+GetHammingDisks <- function(hamming.rings) {
+  hamming.diskss <- list()
   for (i in 1:length(hamming.rings)) {
     training.data <- plyr::rbind.fill(hamming.rings[1:i])
-    hamming.circles[[i]] <- training.data
+    hamming.disks[[i]] <- training.data
   }
-  return(hamming.circles)
+  return(hamming.disks)
 }
 
-TrainTrees <- function(hamming.circles) {
+TrainTrees <- function(hamming.disks) {
   # globals: dataset
   class.col <- attr(dataset, "class.col")
   class.formula <- attr(dataset, "formula")
   trees <- list()
-  for (i in 1:length(hamming.circles)) {
-    training.data <- hamming.circles[[i]]
+  for (i in 1:length(hamming.disks)) {
+    training.data <- hamming.disks[[i]]
     if (length(unique(training.data[,class.col])) == 1) {
       trees[[i]] = NULL
     } else {
@@ -115,15 +115,15 @@ TrainTrees <- function(hamming.circles) {
   return(trees)
 }
 
-EvaluateTrees <- function(trees, hamming.circles) {
+EvaluateTrees <- function(trees, hamming.disks) {
   class.col <- attr(dataset, "class.col")
   results <- data.frame(train.d=0, test.d=0, accuracy=0)
   row.num = 1
-  for (i in 1:length(hamming.circles)) {
+  for (i in 1:length(hamming.disks)) {
     tree = trees[[i]]
-    for (j in 1:length(hamming.circles)) {
+    for (j in 1:length(hamming.disks)) {
       if (!is.null(tree)) {
-        test.data <- hamming.circles[[j]]
+        test.data <- hamming.disks[[j]]
         tree.predictions <- predict(tree, test.data, type="class")
         tree.accuracy <- mean(tree.predictions == test.data[,class.col])
         results[row.num, ] <- c(i, j, tree.accuracy) 
@@ -138,13 +138,7 @@ EvaluateTrees <- function(trees, hamming.circles) {
 
 PlotResults <- function(results) {
   plt <- ggplot(results) + 
-    geom_line(aes(results$train.d, results$accuracy), group=results$test.d)
-  print(plt)
-}
-
-make.a.plot <- function(results) {
-  plt <- ggplot(results) + 
-    geom_line(aes(results$test.d, results$accuracy), group=results$train.d)
+    geom_line(aes(train.d, accuracy), group=test.d)
   print(plt)
 }
 
