@@ -154,9 +154,13 @@ EvaluateTrees <- function(trees, hamming.disks) {
   row.num <- 1
   for (i in 1:length(hamming.disks)) {
     tree <- trees[[i]]
-    tree.prediction <- predict(tree, instance, type="class")
     rf.prediction <- predict(random.forest, instance, type="class")
-    tree.accuracy <- as.integer(tree.prediction == rf.prediction)
+    if (class(tree) == "rpart") {
+      tree.prediction <- predict(tree, instance, type="class")
+      tree.accuracy <- as.integer(tree.prediction == rf.prediction)
+    } else if (class(tree) == "factor") {
+      tree.accuracy <- mean(tree == rf.prediction)
+    }
     results[row.num, ] <- c(i, 0, tree.accuracy)
     row.num <- row.num+1
     for (j in 1:length(hamming.disks)) {
