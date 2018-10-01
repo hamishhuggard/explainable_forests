@@ -181,11 +181,7 @@ EvaluateTrees <- function(trees, hamming.disks) {
   return(results)
 }
 
-TrainAndEvaluate <- function(instance, max.ham = 5, fig.write = FALSE, fig.id = 0, fig.dir = "plots", fig.prefix = 'plot-', fig.ext = 'png', fig.width = 500, instance.n = 1) {
-  hamming.rings <- GetHammingRings(instance, max.ham)
-  hamming.disks <- GetHammingDisks(hamming.rings)
-  trees <- TrainTrees(hamming.disks)
-  results <- EvaluateTrees(trees, hamming.rings)
+PlotAndWrite <- function(results, fig.write = FALSE, fig.id = 0, fig.dir = "plots", fig.prefix = 'plot-', fig.ext = 'png', fig.width = 500, instance.n = 1) {
   PlotResults(results, instance.n)
   if (fig.write == TRUE) {
     dev.print(png, paste(fig.dir, "/", fig.prefix, fig.id, '.', fig.ext, sep = ""), width = fig.width)
@@ -258,7 +254,11 @@ max.ham <- 5
 
 for (num in 1:12) {
   instance <- dataset[num,]
-  TrainAndEvaluate(instance, fig.write = TRUE, fig.prefix = "plot-preset-", fig.id = num, instance.n=num)
+  hamming.rings <- GetHammingRings(instance, max.ham)
+  hamming.disks <- GetHammingDisks(hamming.rings)
+  trees <- TrainTrees(hamming.disks)
+  results <- EvaluateTrees(trees, hamming.rings)
+  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "plot-whole-pretty-", fig.id = num, instance.n = num)
 }
 
 ## get training.data with only one label to test handling of that case
