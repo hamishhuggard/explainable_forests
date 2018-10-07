@@ -159,25 +159,25 @@ EvaluateTrees <- function(trees, hamming.disks) {
     tree <- trees[[i]]
     rf.prediction <- predict(random.forest, instance, type="class")
     if (class(tree) == "rpart") {
-      tree.prediction <- predict(tree, instance, type="class")
-      tree.accuracy <- as.integer(tree.prediction == rf.prediction)
+      original.prediction <- predict(tree, instance, type="class")
+      tree.fidelity <- as.integer(original.prediction == rf.prediction)
     } else if (class(tree) == "factor") {
-      tree.accuracy <- mean(tree == rf.prediction)
+      tree.fidelity <- mean(tree == rf.prediction)
     }
-    results[row.num, ] <- c(i, 0, tree.accuracy)
+    results[row.num, ] <- c(i, 0, tree.fidelity)
     row.num <- row.num+1
     for (j in 1:length(hamming.disks)) {
-      test.data <- hamming.disks[[j]]
+      hamming.data <- hamming.disks[[j]]
       if (class(tree) == "rpart") {  # successfully trained trees have class rpart
-        tree.predictions <- predict(tree, test.data, type="class")
-        tree.accuracy <- mean(tree.predictions == test.data[,class.col])
+        hamming.predictions <- predict(tree, hamming.data, type="class")
+        tree.fidelity <- mean(hamming.predictions == hamming.data[,class.col])
       } else if (class(tree) == "factor") {  # if there was only one label, tree is a factor
-        tree.accuracy <- mean(tree == test.data[,class.col])
+        tree.fidelity <- mean(tree == hamming.data[,class.col])
       } else {
         print ("unexpected class for tree in EvaluateTrees")
         print (class(tree))
       }
-      results[row.num, ] <- c(i, j, tree.accuracy)
+      results[row.num, ] <- c(i, j, tree.fidelity)
       row.num <- row.num+1
     }
   }
