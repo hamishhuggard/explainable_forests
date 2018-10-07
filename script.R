@@ -8,6 +8,8 @@ library(RColorBrewer) # for plotting rpart tree
 library(plyr) # for rbind.fill
 library(ggplot2) # for ggplot
 
+set.seed(42)
+
 ## functions
 
 GetHammingDistance <- function(row.1, row.2) {
@@ -227,10 +229,6 @@ GetTrainingData <- function(dataset, sample.type = "random") {
   } else if (sample.type== "whole") {
     # training_data <- the whole dataset
     training.data <- 1:nrow(dataset)
-  } else if (sample.type == "preset") {
-    # training.data <- a previously generated random sample
-    # x = as.integer(eval(parse(text=paste("c(", paste(c(training.data), collapse=", "), ")", sep=""))))
-    training.data <- as.integer(c(105, 204, 143, 22, 50, 275, 201, 242, 125, 147, 40, 121, 103, 108, 246, 43, 137, 253, 271, 82, 224, 178, 160, 145, 221, 190, 202, 274, 208, 73, 197, 188, 61, 14, 236, 270, 161, 211, 195, 209, 130, 196, 124, 92, 166, 133, 59, 95, 7, 126, 141, 264, 33, 165, 3, 282, 265, 268, 181, 180, 157, 272, 255, 79, 42, 20, 169, 56, 128, 88, 71, 78, 261, 244, 182, 53, 194, 32, 146, 38, 237, 142, 41, 280, 104, 123, 94, 85, 192, 216, 139, 200, 240, 24, 155, 18, 247, 9, 70, 64, 11, 238, 223, 215, 259, 257, 173, 131, 263, 156, 21, 46, 154, 170, 279, 77, 167, 127, 213, 52, 135, 84, 256, 25, 45, 219, 254, 63, 69, 231, 245, 233, 149, 29, 248, 49, 109, 83, 58, 153, 222, 140, 159))
   }
   return(training.data)
 }
@@ -244,7 +242,7 @@ dataset <- GetDataset(url_string, header = FALSE, local = TRUE)
 
 #training.data <- GetTrainingData(dataset, "random")
 #training.data <- GetTrainingData(dataset, "whole")
-training.data <- GetTrainingData(dataset, "preset")
+training.data <- GetTrainingData(dataset, "random")
 
 ## train a random forest on the training data
 random.forest <- randomForest::randomForest(formula=attr(dataset, "formula"), data=dataset, subset=training.data)
