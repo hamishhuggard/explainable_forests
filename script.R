@@ -72,6 +72,7 @@ Hamming <- function(row, distance = 1) {
     combo.frame <- data.frame(row)
     combo.frame[1:nrow(combos), ] <- row
     combo.frame[, combination] <- combos
+    colnames(combo.frame) <- colnames(result)
     result <- rbind(result, combo.frame)
   }
   result[2:nrow(result), ]
@@ -208,6 +209,7 @@ GetDataset <- function(url_string, class.col = 1, header = FALSE, local = FALSE)
   }
   dataset <- read.csv(string, header = header)
   dataset <- data.frame(lapply(dataset, factor))  # coerce columns into factors
+  colnames(dataset) <- col.names
   attr(dataset, "class.col") <- class.col
   attr(dataset, "class.colname") <- colnames(dataset)[class.col]
   attr(dataset, "formula") <- as.formula(paste(attr(dataset, "class.colname"), "~."))
@@ -237,6 +239,7 @@ GetTrainingData <- function(dataset, sample.type = "random") {
 
 url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data"
 url_string <- "breast-cancer.data"
+col.names <- c("Class", "age", "menopause", "tumor.size", "inv.nodes", "node.caps", "deg.malig", "breast", "breast.quad", "irradiat")
 dataset <- GetDataset(url_string, header = FALSE, local = TRUE)
 
 #training.data <- GetTrainingData(dataset, "random")
