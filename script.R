@@ -147,8 +147,16 @@ AssessAccuracy <- function(trees) {
   # globals: dataset, training.data
   for (i in 1:length(trees)) {
     tree <- trees[[i]]
-    tree.predictions <- predict(tree, dataset[-training.data,], type="class")
-    tree.accuracy <- mean(tree.predictions == dataset[-training.data, attr(dataset, "class.col")])
+    actual.classifications <- dataset[-training.data, attr(dataset, "class.col")]
+    if (class(tree) == "rpart") {  # successfully trained trees have class rpart
+      tree.predictions <- predict(tree, dataset[-training.data,], type="class")
+    } else if (class(tree) == "factor") {  # if there was only one label, tree is a factor
+      tree.predictions <- tree
+    } else {
+      print ("unexpected class for tree in EvaluateTrees")
+      print (class(tree))
+    }
+    tree.accuracy <- mean(tree.predictions == actual.classifications)
     attr(trees[[i]], "accuracy") <- tree.accuracy
   }
   return(trees)
