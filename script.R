@@ -143,11 +143,47 @@ TrainTrees <- function(hamming.disks) {
   return(trees)
 }
 
+AssessAccuracy <- function(trees) {
+  # globals: dataset, training.data
+  for (i in 1:length(trees)) {
+    tree <- trees[[i]]
+    tree.predictions <- predict(tree, dataset[-training.data,], type="class")
+    tree.accuracy <- mean(tree.predictions == dataset[-training.data, attr(dataset, "class.col")])
+    attr(trees[[i]], "accuracy") <- tree.accuracy
+  }
+  return(trees)
+}
+
+EvaluateTree <- function(tree, hamming.disks) {
+  # globals: dataset, random.forest
+  class.col <- attr(dataset, "class.col")
+  results <- data.frame(train.d=integer(0), test.d=integer(0), accuracy=double(0))
+  row.num <- 1
+  ## assess fidelity of ordinary tree
+  tree <- ordinary.tree
+  # first evaluate the fidelity on the original instance
+  rf.prediction <- predict(random.forest, instance, type="class")
+  original.prediction <- predict(tree, instance, type="class")
+  tree.fidelity <- as.integer(original.prediction == rf.prediction)
+  results[row.num, ] <- c(0, 0, tree.fidelity)
+  row.num <- row.num+1
+  # then evaluate the fidelity on all the hamming datasets
+  for (j in 1:length(hamming.disks)) {
+    hamming.data <- hamming.disks[[j]]
+    hamming.predictions <- predict(tree, hamming.data, type="class")
+    tree.fidelity <- mean(hamming.predictions == hamming.data[,class.col])
+    results[row.num, ] <- c(0, j, tree.fidelity)
+    row.num <- row.num+1
+  }
+  return(results)
+}
+
 EvaluateTrees <- function(trees, hamming.disks) {
-  # args: a list (hamming.disks), where list[[i]]
+  # args:
+  # a list (hamming.disks), where list[[i]]
   #   is a dataframe containing all instances at most
   #   Hamming distance i from an initial instance
-  #       a list (trees), where list[[i]]
+  # a list (trees), where list[[i]]
   #   is either a rpart tree trained on hamming.disks[[i]], or
   #   a factor (if hamming.disks[[i]] has only one classification)
   # globals: dataset
@@ -155,17 +191,23 @@ EvaluateTrees <- function(trees, hamming.disks) {
   class.col <- attr(dataset, "class.col")
   results <- data.frame(train.d=integer(0), test.d=integer(0), accuracy=double(0))
   row.num <- 1
-  for (i in 1:length(hamming.disks)) {
+  ## assess fidelity of the hamming trees
+  for (i in 1:length(trees)) {
     tree <- trees[[i]]
+    # first evaluate the fidelity on the original instance
     rf.prediction <- predict(random.forest, instance, type="class")
-    if (class(tree) == "rpart") {
+    if (class(tree) == "rpart") {  # successfully trained trees have class rpart
       original.prediction <- predict(tree, instance, type="class")
       tree.fidelity <- as.integer(original.prediction == rf.prediction)
-    } else if (class(tree) == "factor") {
+    } else if (class(tree) == "factor") {  # if there was only one label, tree is a factor
       tree.fidelity <- mean(tree == rf.prediction)
+    } else {
+      print ("unexpected class for tree in EvaluateTrees")
+      print (class(tree))
     }
     results[row.num, ] <- c(i, 0, tree.fidelity)
     row.num <- row.num+1
+    # then evaluate the fidelity on the hamming datasets
     for (j in 1:length(hamming.disks)) {
       hamming.data <- hamming.disks[[j]]
       if (class(tree) == "rpart") {  # successfully trained trees have class rpart
