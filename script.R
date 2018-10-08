@@ -236,7 +236,7 @@ PlotAndWrite <- function(results, fig.write = FALSE, fig.id = 0, fig.dir = "plot
 PlotResults <- function(results, instance.n=1) {
   # args: a dataframe (results), with columns train.d, accuracy and test.d
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
-  results[, 1] <- factor(results[, 1], levels=c('1','2','3','4','5'), ordered=TRUE)
+  results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
   plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
