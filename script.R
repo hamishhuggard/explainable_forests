@@ -332,3 +332,77 @@ for (num in 1:1) {
 
 ## get training.data with only one label to test handling of that case
 # training.data <- hamming.disks[[i]][hamming.disks[[i]][,1] == unique(hamming.disks[[i]][,1])[[1]],]
+
+
+summary.results = readRDS(file="evaluation.data")
+
+# PLOT ERROR BARS
+
+error.bars.and.shit.helper <- function(instances, plt.title="Bitches vs Problems") {
+  results <- data.frame(train.d=integer(0), test.d=integer(0), 
+                        accuracy.mean=double(0), accuracy.sd=double(0))
+  i <- 1
+  for (train.hd in 1:max.ham) {
+    for (test.hd in 1:max.ham) {
+      xxx <- subset(instances, train.d==train.hd & test.d==test.hd)
+      fucking.mean <- mean(xxx$accuracy)
+      fucking.sd <- sd(xxx$accuracy)
+      results[i, ] <- c(train.hd, test.hd, fucking.mean, fucking.sd)
+      i <- i+1
+    }
+  }
+  results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
+  plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
+    geom_line(aes(test.d, accuracy.mean, colour = train.d, group = train.d)) +
+    geom_point(aes(test.d, accuracy.mean, colour = train.d, group = train.d)) +
+    labs(title = paste(paste(plt.title)), x = "Testing HD", 
+         y = "Accuracy", color = "Training HD")
+  print(plt)
+}
+
+error.bars.and.shit.helper.2 <- function(instances, plt.title="Bitches vs Problems") {
+  results <- data.frame(train.d=integer(0), test.d=integer(0), 
+                        accuracy.mean=double(0), accuracy.sd=double(0))
+  for (train.hd in 1:max.ham) {
+    i <- 1
+    for (test.hd in 1:max.ham) {
+      xxx <- subset(instances, train.d==train.hd & test.d==test.hd)
+      fucking.mean <- mean(xxx$accuracy)
+      fucking.sd <- sd(xxx$accuracy)
+      results[i, ] <- c(train.hd, test.hd, fucking.mean, fucking.sd)
+      i <- i+1
+    }
+    results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
+    plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
+      geom_line(aes(test.d, accuracy.mean)) +
+      geom_point(aes(test.d, accuracy.mean)) +
+      labs(title = paste(paste(plt.title,'Training d =',train.hd)), x = "Testing HD", 
+           y = "Accuracy") +
+      geom_errorbar(aes(x = test.d, ymin=accuracy.mean-accuracy.sd, ymax=accuracy.mean+accuracy.sd))
+    print(plt)
+  }
+}
+
+error.bars.and.shit <- function(no.instances) {
+  training.data.inds <- GetTrainingData(dataset, "random")
+
+  training.instances <- summary.results[1, ]
+  for (i in training.data.inds) {
+    training.instances <- rbind(training.instances, subset(summary.results, instance.num==i))
+  }
+  training.instances <- training.instances[2:nrow(training.instances), ]
+  error.bars.and.shit.helper(training.instances, "Training Set")
+  error.bars.and.shit.helper.2(training.instances, "Training Set,")
+
+  test.instances <- summary.results[1, ]
+  test.data.inds <- setdiff(1:nrow(dataset), training.data.inds)
+  for (i in test.data.inds) {
+    test.instances <- rbind(test.instances, subset(summary.results, instance.num==i))
+  }
+  test.instances <- test.instances[2:nrow(test.instances), ]
+  error.bars.and.shit.helper(test.instances, "Test Set")
+  error.bars.and.shit.helper.2(test.instances, "Test Set,")
+}
+
+error.bars.and.shit()
+
