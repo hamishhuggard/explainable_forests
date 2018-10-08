@@ -293,15 +293,33 @@ random.forest <- randomForest::randomForest(formula=attr(dataset, "formula"), da
 rf.predictions <- predict(random.forest, dataset[-training.data,], type="class")
 rf.accuracy <- mean(rf.predictions == dataset[,attr(dataset, "class.col")][-training.data])
 
+## train an ordinary tree on the training data
+ordinary.tree <- rpart::rpart(formula=attr(dataset, "formula"), data=dataset[training.data,], method="class")
+
+## check oordinary tree accuracy on test data
+ordinary.tree.predictions <- predict(ordinary.tree, dataset[-training.data,], type="class")
+ordinary.tree.accuracy <- mean(ordinary.tree.predictions == dataset[,attr(dataset, "class.col")][-training.data])
+
+## evaluate ordinary tree fidelity on test data
+ordinary.tree.test.fidelity <- mean(ordinary.tree.predictions == rf.predictions)
+
 max.ham <- 5
 
-for (num in 1:12) {
+all.trees.per.instance <- list()
+
+#for (num in 1:nrow(dataset)) {
+#for (num in 1:12) {
+for (num in 1:1) {
   instance <- dataset[num,]
   hamming.rings <- GetHammingRings(instance, max.ham)
   hamming.disks <- GetHammingDisks(hamming.rings)
   trees <- TrainTrees(hamming.disks)
   results <- EvaluateTrees(trees, hamming.rings)
-  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "plot-whole-pretty-", fig.id = num, instance.n = num)
+  ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
+  results <- rbind(results, ordinary.tree.results)
+  trees <- AssessAccuracy(trees) # adds accuracy as an attribute to each tree
+  all.trees.per.instance[[num]] <- trees
+  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = num, fig.width = 800)
 }
 
 ## get training.data with only one label to test handling of that case
