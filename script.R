@@ -2,10 +2,10 @@
 
 library(randomForest)
 library(rpart) #for decision tree
-#library(rattle) # for plotting rpart tree
-#library(rpart.plot) # for plotting rpart tree
-#library(RColorBrewer) # for plotting rpart tree
-#library(plyr) # for rbind.fill
+library(rattle) # for plotting rpart tree
+library(rpart.plot) # for plotting rpart tree
+library(RColorBrewer) # for plotting rpart tree
+library(plyr) # for rbind.fill
 library(ggplot2) # for ggplot
 
 set.seed(42)
@@ -131,13 +131,14 @@ TrainTrees <- function(hamming.disks) {
   #   a factor (if hamming.disks[[i]] has only one classification)
   class.col <- attr(dataset, "class.col")
   class.formula <- attr(dataset, "formula")
+  ctr <- rpart.control(maxdepth = 5) # maximum depth allowed for trees
   trees <- list()
   for (i in 1:length(hamming.disks)) {
     training.data <- hamming.disks[[i]]
     if (length(unique(training.data[,class.col])) == 1) {
       trees[[i]] <- unique(training.data[,class.col]) # if there was only one label, store that
     } else {
-      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class")
+      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", control=ctr)
     }
   }
   return(trees)
@@ -186,7 +187,7 @@ EvaluateTree <- function(tree, hamming.disks) {
   return(results)
 }
 
-EvaluateTrees <- function(trees, hamming.disks) {
+EvaluateTrees <- function(trees, hamming.disks, instance) {
   # args:
   # a list (hamming.disks), where list[[i]]
   #   is a dataframe containing all instances at most
@@ -315,25 +316,27 @@ max.ham <- 5
 
 all.trees.per.instance <- list()
 
-#for (num in 1:nrow(dataset)) {
-#for (num in 1:12) {
-for (num in 1:1) {
-  instance <- dataset[num,]
-  hamming.rings <- GetHammingRings(instance, max.ham)
-  hamming.disks <- GetHammingDisks(hamming.rings)
-  trees <- TrainTrees(hamming.disks)
-  results <- EvaluateTrees(trees, hamming.rings)
-  ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
-  results <- rbind(results, ordinary.tree.results)
-  trees <- AssessAccuracy(trees) # adds accuracy as an attribute to each tree
-  all.trees.per.instance[[num]] <- trees
-  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = num, fig.width = 800)
+something <- function() {
+  #for (num in 1:nrow(dataset)) {
+  #for (num in 1:12) {
+  for (num in 1:1) {
+    instance <- dataset[num,]
+    hamming.rings <- GetHammingRings(instance, max.ham)
+    hamming.disks <- GetHammingDisks(hamming.rings)
+    trees <- TrainTrees(hamming.disks)
+    results <- EvaluateTrees(trees, hamming.rings)
+    ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
+    results <- rbind(results, ordinary.tree.results)
+    trees <- AssessAccuracy(trees) # adds accuracy as an attribute to each tree
+    all.trees.per.instance[[num]] <- trees
+    PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = num, fig.width = 800)
+  }
 }
 
 ## get training.data with only one label to test handling of that case
 # training.data <- hamming.disks[[i]][hamming.disks[[i]][,1] == unique(hamming.disks[[i]][,1])[[1]],]
 
-setwd("Desktop/CS760")
+#setwd("Desktop/CS760")
 summary.results = readRDS(file="evaluation.data")
 
 # PLOT ERROR BARS
@@ -345,7 +348,7 @@ error.bars.and.shit.helper <- function(instances, plt.title="Bitches vs Problems
   results.sub <- results
   for (train.hd in 1:max.ham) {
     i <- 1
-    for (test.hd in 1:max.ham) {
+    for (test.hd in 0:max.ham) {
       xxx <- subset(instances, train.d==train.hd & test.d==test.hd)
       fucking.mean <- mean(xxx$accuracy)
       fucking.sd <- sd(xxx$accuracy)
@@ -357,8 +360,9 @@ error.bars.and.shit.helper <- function(instances, plt.title="Bitches vs Problems
       geom_point(aes(test.d, accuracy.mean)) +
       labs(title = paste(paste(plt.title,'Training d =',train.hd)), x = "Testing HD", 
            y = "Accuracy") +
-      geom_errorbar(aes(x = test.d, ymin=accuracy.mean-accuracy.sd, ymax=accuracy.mean+accuracy.sd))
+      geom_errorbar(aes(x = test.d, ymin=accuracy.mean-accuracy.sd, ymax=pmin(1,accuracy.mean+accuracy.sd)))
     print(plt)
+    write.plt(paste0(plt.title,'_d_equals_',train.hd))
     
     results <- rbind(results, results.sub)
   }
@@ -368,10 +372,11 @@ error.bars.and.shit.helper <- function(instances, plt.title="Bitches vs Problems
     labs(title = paste(paste(plt.title)), x = "Testing HD", 
          y = "Accuracy", color = "Training HD")
   print(plt)
+  write.plt(plt.title)
 }
 
-write.plt(plt, ) <- function(name) {
-  dev.print(png, paste(name, ".png", sep = ""), width = fig.width)
+write.plt <- function(name) {
+  dev.print(png, paste0(name,".png"), width = 500)
 }
 
 error.bars.and.shit <- function(no.instances) {
@@ -382,7 +387,7 @@ error.bars.and.shit <- function(no.instances) {
     training.instances <- rbind(training.instances, subset(summary.results, instance.num==i))
   }
   training.instances <- training.instances[2:nrow(training.instances), ]
-  error.bars.and.shit.helper(training.instances, "Training Set")
+  error.bars.and.shit.helper(training.instances, "Training-Set")
   #error.bars.and.shit.helper.2(training.instances, "Training Set,")
 
   test.instances <- summary.results[1, ]
@@ -391,8 +396,62 @@ error.bars.and.shit <- function(no.instances) {
     test.instances <- rbind(test.instances, subset(summary.results, instance.num==i))
   }
   test.instances <- test.instances[2:nrow(test.instances), ]
-  error.bars.and.shit.helper(test.instances, "Test Set")
+  error.bars.and.shit.helper(test.instances, "Test-Set")
   #error.bars.and.shit.helper.2(test.instances, "Test Set,")
 }
 
 error.bars.and.shit()
+
+
+
+explain.a.test.instance <- function(index) {
+  training.data.inds <- GetTrainingData(dataset, "random")
+  test.data.inds <- setdiff(1:nrow(dataset), training.data.inds)
+  instance <- dataset[training.data.inds[index], ]
+  
+  hamming.rings <- GetHammingRings(instance, max.ham)
+  hamming.disks <- GetHammingDisks(hamming.rings)
+  trees <- TrainTrees(hamming.disks)
+  results <- EvaluateTrees(trees, hamming.rings, instance)
+  
+  # LEMONify
+  results[, 'accuracy'] <- results$accuracy * 2^(-results$test.d)
+  lemon.results <- data.frame(training.hd=1:5, score=0, complexity=0)
+  for (i in 1:5) {
+    lemon.results[i, 'score'] <- sum( subset(results, train.d==i)$accuracy )
+    if (class(trees[[i]]) == "rpart") {
+      nodes <- as.numeric(rownames(trees[[i]]$frame))
+      lemon.results[i, 'complexity'] <- max(rpart:::tree.depth(nodes))
+    }
+  }
+  print(lemon.results)
+
+  # Plot
+  results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
+  plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
+    geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
+    geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
+    labs(title = "To Explain", x = "Testing HD", 
+         y = "Accuracy", color = "Training HD")
+  
+  # Add red line
+  red.line <- data.frame(x=seq(0,5,0.1))
+  red.line[, 'y'] <- 2^(-red.line$x)
+  plt <- plt + geom_line(data=red.line, aes(x, y), linetype="dashed", colour="red")
+  
+  # Print a write plot
+  print(plt)
+  dev.print(png, "score_plot.png", width = 1000)
+  
+  # Draw best explanation
+  best.expl <- trees[[which.max(lemon.results$score)]]
+  fancyRpartPlot(best.expl)
+  png("tree_plt.png")
+  fancyRpartPlot(best.expl)
+  dev.off()
+}
+
+to.explain <- 20 #20th test instance
+index <- to.explain
+
+explain.a.test.instance( to.explain  )
