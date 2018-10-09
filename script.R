@@ -2,10 +2,10 @@
 
 library(randomForest)
 library(rpart) #for decision tree
-library(rattle) # for plotting rpart tree
-library(rpart.plot) # for plotting rpart tree
-library(RColorBrewer) # for plotting rpart tree
-library(plyr) # for rbind.fill
+#library(rattle) # for plotting rpart tree
+#library(rpart.plot) # for plotting rpart tree
+#library(RColorBrewer) # for plotting rpart tree
+#library(plyr) # for rbind.fill
 library(ggplot2) # for ggplot
 
 set.seed(42)
@@ -286,9 +286,9 @@ GetTrainingData <- function(dataset, sample.type = "random") {
 ## load the dataset
 
 url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data"
-url_string <- "breast-cancer.data"
+#url_string <- "breast-cancer.data"
 col.names <- c("Class", "age", "menopause", "tumor.size", "inv.nodes", "node.caps", "deg.malig", "breast", "breast.quad", "irradiat")
-dataset <- GetDataset(url_string, header = FALSE, local = TRUE)
+dataset <- GetDataset(url_string, header = FALSE, local = FALSE)
 
 #training.data <- GetTrainingData(dataset, "random")
 #training.data <- GetTrainingData(dataset, "whole")
@@ -333,7 +333,7 @@ for (num in 1:1) {
 ## get training.data with only one label to test handling of that case
 # training.data <- hamming.disks[[i]][hamming.disks[[i]][,1] == unique(hamming.disks[[i]][,1])[[1]],]
 
-
+setwd("Desktop/CS760")
 summary.results = readRDS(file="evaluation.data")
 
 # PLOT ERROR BARS
@@ -341,17 +341,27 @@ summary.results = readRDS(file="evaluation.data")
 error.bars.and.shit.helper <- function(instances, plt.title="Bitches vs Problems") {
   results <- data.frame(train.d=integer(0), test.d=integer(0), 
                         accuracy.mean=double(0), accuracy.sd=double(0))
-  i <- 1
+  results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
+  results.sub <- results
   for (train.hd in 1:max.ham) {
+    i <- 1
     for (test.hd in 1:max.ham) {
       xxx <- subset(instances, train.d==train.hd & test.d==test.hd)
       fucking.mean <- mean(xxx$accuracy)
       fucking.sd <- sd(xxx$accuracy)
-      results[i, ] <- c(train.hd, test.hd, fucking.mean, fucking.sd)
+      results.sub[i, ] <- c(train.hd, test.hd, fucking.mean, fucking.sd)
       i <- i+1
     }
+    plt <- ggplot(results.sub, aes(ymin = 0.0, ymax = 1.0)) +
+      geom_line(aes(test.d, accuracy.mean)) +
+      geom_point(aes(test.d, accuracy.mean)) +
+      labs(title = paste(paste(plt.title,'Training d =',train.hd)), x = "Testing HD", 
+           y = "Accuracy") +
+      geom_errorbar(aes(x = test.d, ymin=accuracy.mean-accuracy.sd, ymax=accuracy.mean+accuracy.sd))
+    print(plt)
+    
+    results <- rbind(results, results.sub)
   }
-  results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
   plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
     geom_line(aes(test.d, accuracy.mean, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy.mean, colour = train.d, group = train.d)) +
@@ -360,27 +370,8 @@ error.bars.and.shit.helper <- function(instances, plt.title="Bitches vs Problems
   print(plt)
 }
 
-error.bars.and.shit.helper.2 <- function(instances, plt.title="Bitches vs Problems") {
-  results <- data.frame(train.d=integer(0), test.d=integer(0), 
-                        accuracy.mean=double(0), accuracy.sd=double(0))
-  for (train.hd in 1:max.ham) {
-    i <- 1
-    for (test.hd in 1:max.ham) {
-      xxx <- subset(instances, train.d==train.hd & test.d==test.hd)
-      fucking.mean <- mean(xxx$accuracy)
-      fucking.sd <- sd(xxx$accuracy)
-      results[i, ] <- c(train.hd, test.hd, fucking.mean, fucking.sd)
-      i <- i+1
-    }
-    results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
-    plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
-      geom_line(aes(test.d, accuracy.mean)) +
-      geom_point(aes(test.d, accuracy.mean)) +
-      labs(title = paste(paste(plt.title,'Training d =',train.hd)), x = "Testing HD", 
-           y = "Accuracy") +
-      geom_errorbar(aes(x = test.d, ymin=accuracy.mean-accuracy.sd, ymax=accuracy.mean+accuracy.sd))
-    print(plt)
-  }
+write.plt(plt, ) <- function(name) {
+  dev.print(png, paste(name, ".png", sep = ""), width = fig.width)
 }
 
 error.bars.and.shit <- function(no.instances) {
@@ -392,7 +383,7 @@ error.bars.and.shit <- function(no.instances) {
   }
   training.instances <- training.instances[2:nrow(training.instances), ]
   error.bars.and.shit.helper(training.instances, "Training Set")
-  error.bars.and.shit.helper.2(training.instances, "Training Set,")
+  #error.bars.and.shit.helper.2(training.instances, "Training Set,")
 
   test.instances <- summary.results[1, ]
   test.data.inds <- setdiff(1:nrow(dataset), training.data.inds)
@@ -401,8 +392,7 @@ error.bars.and.shit <- function(no.instances) {
   }
   test.instances <- test.instances[2:nrow(test.instances), ]
   error.bars.and.shit.helper(test.instances, "Test Set")
-  error.bars.and.shit.helper.2(test.instances, "Test Set,")
+  #error.bars.and.shit.helper.2(test.instances, "Test Set,")
 }
 
 error.bars.and.shit()
-
