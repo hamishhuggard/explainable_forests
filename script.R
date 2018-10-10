@@ -1,5 +1,3 @@
-## libraries
-
 library(randomForest)
 library(rpart) #for decision tree
 library(rattle) # for plotting rpart tree
@@ -12,43 +10,44 @@ set.seed(42)
 
 ## functions
 
-GetHammingDistance <- function(row.1, row.2) {
-  # args: two instances (rows)
+GetHammingDistance <- function(class.col, instance.1, instance.2) {
+  # args: class.col (column number with the classification) two instances (rows)
   # returns: the hamming distance between two instances
   # eg: GetHammingDistance(dataset[1, ], dataset[3, ])
-  cols <- 2:(ncol(row.1))
-  length(which(row.1[, cols] != row.2[, cols]))
+  cols <- 1:(ncol(instance.1))
+  cols <- cols[cols != class.col]
+  length(which(instance.1[, cols] != instance.2[, cols]))
 }
 
 
-UptoHamming <- function(row, max.ham) {
+UptoHamming <- function(instance, max.ham) {
   # args: an instance (row) and a distance limit (max.ham):
   # returns: dataframe of all possible instances with hamming distance from row < max.ham
   # eg: UptoHamming(dataset[1, ], 5)
-  all.instances <- Hamming(row, 1)
-  for (i in 2:max.ham) {
-    all.instances <- rbind(all.instances, Hamming(row, i))
+  all.instances <- data.frame(instance)
+  for (i in 1:max.ham) {
+    all.instances <- rbind(all.instances, Hamming(instance, i))
   }
   all.instances
 }
 
-HammingOld <- function(row, distance = 1) {
+HammingOld <- function(instance, distance = 1) {
   # args: an instance (row),
   #       a hamming distance (distance),
   # returns: a dataframe of all posible instances with hamming distance from row == distance
   # eg: HammingOld(dataset[1, ], 5)
-  classification.col <- attr(row, "class.col")
-  options <- lapply(row, levels)
-  perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
-  perturbed.dataframe <- data.frame(row)
+  classification.col <- attr(instance, "class.col")
+  options <- lapply(instance, levels)
+  perturb.cols <- combn((1:ncol(instance))[-classification.col], distance, simplify=FALSE)
+  perturbed.dataframe <- data.frame()
   
   for (combination in perturb.cols) {
     combos <- expand.grid(options[combination])
-    tmp.row <- row
+    tmp.instance <- instance
     for (i in 1:nrow(combos)) {
-      tmp.row[combination] <- combos[i,]
-      if (sum(tmp.row[combination] == row[combination]) == 0) {
-        perturbed.dataframe <- rbind(perturbed.dataframe, data.frame(tmp.row))
+      tmp.instance[combination] <- combos[i,]
+      if (sum(tmp.instance[combination] == instance[combination]) == 0) {
+        perturbed.dataframe <- rbind(perturbed.dataframe, data.frame(tmp.instance))
       }
     }
   }
@@ -56,23 +55,23 @@ HammingOld <- function(row, distance = 1) {
   perturbed.dataframe
 }
 
-Hamming <- function(row, distance = 1) {
-  # args: an instance (row),
+Hamming <- function(instance, distance = 1) {
+  # args: an instance (instance),
   #       a hamming distance (distance),
   # returns: a dataframe of all posible instances with hamming distance from row == distance
   # eg: Hamming(dataset[1, ], 5)
-  classification.col <- attr(row, "class.col")
-  perturb.cols <- combn((1:ncol(row))[-classification.col], distance, simplify=FALSE)
-  options <- lapply(row, levels)
-  # Remove values which occur in row
-  for (i in 1:length(row)) {
-    options[[i]] <- options[[i]][which(options[[i]]!=row[, i])]
+  classification.col <- attr(instance, "class.col")
+  perturb.cols <- combn((1:ncol(instance))[-classification.col], distance, simplify=FALSE)
+  options <- lapply(instance, levels)
+  # Remove values which occur in instance
+  for (i in 1:length(instance)) {
+    options[[i]] <- options[[i]][which(options[[i]]!=instance[, i])]
   }
-  result <- row
+  result <- instance
   for (combination in perturb.cols) {
     combos <- expand.grid(options[combination])
-    combo.frame <- data.frame(row)
-    combo.frame[1:nrow(combos), ] <- row
+    combo.frame <- data.frame(instance)
+    combo.frame[1:nrow(combos), ] <- instance
     combo.frame[, combination] <- combos
     colnames(combo.frame) <- colnames(result)
     result <- rbind(result, combo.frame)
@@ -106,7 +105,7 @@ GetHammingRings <- function(instance, max.ham) {
   return(hamming.rings)
 }
 
-GetHammingDisks <- function(hamming.rings) {
+GetHammingDisks <- function(instance, hamming.rings) {
   # args: a list (hamming.rings) where list[[i]]
   #   is a dataframe containing all instances exactly
   #   Hamming distance i from instance
@@ -116,6 +115,7 @@ GetHammingDisks <- function(hamming.rings) {
   hamming.disks <- list()
   for (i in 1:length(hamming.rings)) {
     training.data <- plyr::rbind.fill(hamming.rings[1:i])
+    training.data <- rbind(training.data, instance)
     hamming.disks[[i]] <- training.data
   }
   return(hamming.disks)
@@ -131,14 +131,13 @@ TrainTrees <- function(hamming.disks) {
   #   a factor (if hamming.disks[[i]] has only one classification)
   class.col <- attr(dataset, "class.col")
   class.formula <- attr(dataset, "formula")
-  ctr <- rpart.control(maxdepth = 5) # maximum depth allowed for trees
   trees <- list()
   for (i in 1:length(hamming.disks)) {
     training.data <- hamming.disks[[i]]
     if (length(unique(training.data[,class.col])) == 1) {
       trees[[i]] <- unique(training.data[,class.col]) # if there was only one label, store that
     } else {
-      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", control=ctr)
+      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", minsplit=1, minbucket=1)
     }
   }
   return(trees)
@@ -167,27 +166,27 @@ EvaluateTree <- function(tree, hamming.disks) {
   # globals: dataset, random.forest
   class.col <- attr(dataset, "class.col")
   results <- data.frame(train.d=integer(0), test.d=integer(0), accuracy=double(0))
-  row.num <- 1
+  instance.num <- 1
   ## assess fidelity of ordinary tree
   tree <- ordinary.tree
   # first evaluate the fidelity on the original instance
   rf.prediction <- predict(random.forest, instance, type="class")
   original.prediction <- predict(tree, instance, type="class")
   tree.fidelity <- as.integer(original.prediction == rf.prediction)
-  results[row.num, ] <- c(0, 0, tree.fidelity)
-  row.num <- row.num+1
+  results[instance.num, ] <- c(0, 0, tree.fidelity)
+  instance.num <- instance.num+1
   # then evaluate the fidelity on all the hamming datasets
   for (j in 1:length(hamming.disks)) {
     hamming.data <- hamming.disks[[j]]
     hamming.predictions <- predict(tree, hamming.data, type="class")
     tree.fidelity <- mean(hamming.predictions == hamming.data[,class.col])
-    results[row.num, ] <- c(0, j, tree.fidelity)
-    row.num <- row.num+1
+    results[instance.num, ] <- c(0, j, tree.fidelity)
+    instance.num <- instance.num+1
   }
   return(results)
 }
 
-EvaluateTrees <- function(trees, hamming.disks, instance) {
+EvaluateTrees <- function(trees, hamming.disks) {
   # args:
   # a list (hamming.disks), where list[[i]]
   #   is a dataframe containing all instances at most
@@ -199,7 +198,7 @@ EvaluateTrees <- function(trees, hamming.disks, instance) {
   # returns: a dataframe of results with columns train.d, accuracy and test.d
   class.col <- attr(dataset, "class.col")
   results <- data.frame(train.d=integer(0), test.d=integer(0), accuracy=double(0))
-  row.num <- 1
+  instance.num <- 1
   ## assess fidelity of the hamming trees
   for (i in 1:length(trees)) {
     tree <- trees[[i]]
@@ -214,8 +213,8 @@ EvaluateTrees <- function(trees, hamming.disks, instance) {
       print ("unexpected class for tree in EvaluateTrees")
       print (class(tree))
     }
-    results[row.num, ] <- c(i, 0, tree.fidelity)
-    row.num <- row.num+1
+    results[instance.num, ] <- c(i, 0, tree.fidelity)
+    instance.num <- instance.num+1
     # then evaluate the fidelity on the hamming datasets
     for (j in 1:length(hamming.disks)) {
       hamming.data <- hamming.disks[[j]]
@@ -228,8 +227,8 @@ EvaluateTrees <- function(trees, hamming.disks, instance) {
         print ("unexpected class for tree in EvaluateTrees")
         print (class(tree))
       }
-      results[row.num, ] <- c(i, j, tree.fidelity)
-      row.num <- row.num+1
+      results[instance.num, ] <- c(i, j, tree.fidelity)
+      instance.num <- instance.num+1
     }
   }
   return(results)
@@ -284,11 +283,17 @@ GetTrainingData <- function(dataset, sample.type = "random") {
   return(training.data)
 }
 
-## load the dataset
-
+## load the breast cancer dataset
 url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer/breast-cancer.data"
 #url_string <- "breast-cancer.data"
 col.names <- c("Class", "age", "menopause", "tumor.size", "inv.nodes", "node.caps", "deg.malig", "breast", "breast.quad", "irradiat")
+
+## OR load the lymphography dataset
+#url_string <- "https://archive.ics.uci.edu/ml/machine-learning-databases/lymphography/lymphography.data"
+#col.names <- c("Class", "lymphatics", "block.of.affere", "bl.of.lymph.c", "bl.of.lymph.s", "by.pass", "extravasates", "regeneration.of",
+#                "early.uptake.in", "lym.nodes.dimin", "lym.nodes.enlar", "changes.in.lym", "defect.in.node", "changes.in.node", "changes.in.stru",
+#                "special.forms", "dislocation.of", "exclusion.of.no", "no.of.nodes.in")
+
 dataset <- GetDataset(url_string, header = FALSE, local = FALSE)
 
 #training.data <- GetTrainingData(dataset, "random")
@@ -300,6 +305,7 @@ random.forest <- randomForest::randomForest(formula=attr(dataset, "formula"), da
 
 ## check rf accuracy on test data
 rf.predictions <- predict(random.forest, dataset[-training.data,], type="class")
+levels(rf.predictions) <- levels(dataset[,attr(dataset, "class.col")])
 rf.accuracy <- mean(rf.predictions == dataset[,attr(dataset, "class.col")][-training.data])
 
 ## train an ordinary tree on the training data
@@ -312,32 +318,43 @@ ordinary.tree.accuracy <- mean(ordinary.tree.predictions == dataset[,attr(datase
 ## evaluate ordinary tree fidelity on test data
 ordinary.tree.test.fidelity <- mean(ordinary.tree.predictions == rf.predictions)
 
-max.ham <- 5
-
 all.trees.per.instance <- list()
+summary.results = data.frame()
+max.ham = 5
 
-something <- function() {
-  #for (num in 1:nrow(dataset)) {
-  #for (num in 1:12) {
-  for (num in 1:1) {
-    instance <- dataset[num,]
-    hamming.rings <- GetHammingRings(instance, max.ham)
-    hamming.disks <- GetHammingDisks(hamming.rings)
-    trees <- TrainTrees(hamming.disks)
-    results <- EvaluateTrees(trees, hamming.rings)
-    ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
-    results <- rbind(results, ordinary.tree.results)
-    trees <- AssessAccuracy(trees) # adds accuracy as an attribute to each tree
-    all.trees.per.instance[[num]] <- trees
-    PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = num, fig.width = 800)
-  }
+for (instance.num in 1:nrow(dataset)) {
+  print(paste("Evaluating instance", instance.num, "of", nrow(dataset)))
+  instance <- dataset[instance.num,]
+  hamming.rings <- GetHammingRings(instance, max.ham)
+  hamming.disks <- GetHammingDisks(instance, hamming.rings)
+  trees <- TrainTrees(hamming.disks)
+  results <- EvaluateTrees(trees, hamming.rings)
+  
+  ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
+  results <- rbind(results, ordinary.tree.results)
+  trees <- AssessAccuracy(trees) # adds accuracy as an attribute to each tree
+  all.trees.per.instance[[instance.num]] <- trees
+  
+  summary.results <- rbind(summary.results, cbind(instance.num, results))
+  
+  #PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = num, fig.width = 800)
 }
+
+#setwd("Desktop/CS760")
+
+#saveRDS(summary.results, file="breast_cancer_results.data")
+#saveRDS(all.trees.per.instance, file="breast_cancer_all_trees_per_instance.data")
+
+saveRDS(summary.results, file="lymphography_results.data")
+saveRDS(all.trees.per.instance, file="evaluation_all_trees_per_instance.data")
+
+# summary.results = readRDS(file="XXX.data")
+
+
+
 
 ## get training.data with only one label to test handling of that case
 # training.data <- hamming.disks[[i]][hamming.disks[[i]][,1] == unique(hamming.disks[[i]][,1])[[1]],]
-
-#setwd("Desktop/CS760")
-summary.results = readRDS(file="evaluation.data")
 
 # PLOT ERROR BARS
 
