@@ -137,7 +137,7 @@ TrainTrees <- function(hamming.disks) {
     if (length(unique(training.data[,class.col])) == 1) {
       trees[[i]] <- unique(training.data[,class.col]) # if there was only one label, store that
     } else {
-      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", minsplit=1, minbucket=1)
+      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", minsplit=1, minbucket=1, cp=0, maxdepth=30)
     }
   }
   return(trees)
@@ -249,7 +249,7 @@ PlotResults <- function(results, instance.n=1) {
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     labs(title = paste("Instance",instance.n), x = "Testing HD", 
-         y = "Accuracy", color = "Training HD")
+         y = "Fidelity", color = "Training HD")
   print(plt)
 }
 
@@ -337,7 +337,7 @@ for (instance.num in 1:nrow(dataset)) {
   
   summary.results <- rbind(summary.results, cbind(instance.num, results))
   
-  #PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = num, fig.width = 800)
+  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = instance.num, fig.width = 800)
 }
 
 #setwd("Desktop/CS760")
