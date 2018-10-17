@@ -3,6 +3,7 @@ library(rpart) #for decision tree
 library(rattle) # for plotting rpart tree
 library(rpart.plot) # for plotting rpart tree
 library(RColorBrewer) # for plotting rpart tree
+library(colorspace)
 library(plyr) # for rbind.fill
 library(ggplot2) # for ggplot
 
@@ -245,6 +246,7 @@ PlotResults <- function(results, instance.n=1) {
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
   results[, 1] <- factor(results[, 1], levels=c(0:max.ham), ordered=TRUE)
   plt <- ggplot(results, aes(ymin = 0.0, ymax = 1.0)) +
+    scale_color_brewer(palette="Spectral") +
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     labs(title = paste("Instance",instance.n), x = "Testing HD", 
@@ -308,24 +310,42 @@ levels(rf.predictions) <- levels(dataset[,attr(dataset, "class.col")])
 rf.accuracy <- mean(rf.predictions == dataset[,attr(dataset, "class.col")][-training.data])
 
 rf.labels <- predict(random.forest, dataset[training.data,], type="class")
-df2 <- dataset[training.data,]
-df2[attr(dataset, "class.col")] <- rf.labels
-global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=df2, method="class", maxdepth=1)
+# df2 <- dataset[training.data,]
+# df2[attr(dataset, "class.col")] <- rf.labels
+# global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=df2, method="class", minsplit=1, minbucket=1, cp=0, maxdepth=5)
+# 
+# global.model.predictions <- predict(global.model, dataset[-training.data,], type="class")
+# global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+# 
+# fancyRpartPlot(global.model)
 
-global.model.predictions <- predict(global.model, dataset[-training.data,], type="class")
-global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+# ## train an ordinary tree on the training data
+# ordinary.tree <- rpart::rpart(formula=attr(dataset, "formula"), data=dataset[training.data,], method="class")
+# 
+# ## check oordinary tree accuracy on test data
+# ordinary.tree.predictions <- predict(ordinary.tree, dataset[-training.data,], type="class")
+# ordinary.tree.accuracy <- mean(ordinary.tree.predictions == dataset[,attr(dataset, "class.col")][-training.data])
+# 
+# ## evaluate ordinary tree fidelity on test data
+# ordinary.tree.test.fidelity <- mean(ordinary.tree.predictions == rf.predictions)
 
-fancyRpartPlot(global.model)
+#####################
+## good boy global ##
+#####################
+instance <- dataset[1,]
+hamming.rings <- GetHammingRings(instance, max.ham)
+hamming.disks <- GetHammingDisks(instance, hamming.rings)
+h8 <- hamming.disks[[8]]
+#for (i in 1:10) {
+global.training.d <- sample(1:nrow(h8), nrow(h8)*0.1)
+global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8[global.training.d,], method="class")
+#global.model.predictions <- predict(global.model, h8[-global.training.d,], type="class")
+#rf.predictions <- predict(random.forest, h8[-global.training.d,], type="class")
+#global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+#print(global.model.fidelity) 
+#}
+#fancyRpartPlot(global.model)
 
-## train an ordinary tree on the training data
-ordinary.tree <- rpart::rpart(formula=attr(dataset, "formula"), data=dataset[training.data,], method="class")
-
-## check oordinary tree accuracy on test data
-ordinary.tree.predictions <- predict(ordinary.tree, dataset[-training.data,], type="class")
-ordinary.tree.accuracy <- mean(ordinary.tree.predictions == dataset[,attr(dataset, "class.col")][-training.data])
-
-## evaluate ordinary tree fidelity on test data
-ordinary.tree.test.fidelity <- mean(ordinary.tree.predictions == rf.predictions)
 
 all.trees.per.instance <- list()
 summary.results = data.frame()
@@ -348,7 +368,7 @@ for (instance.num in 1:nrow(dataset)) {
   
   summary.results <- rbind(summary.results, cbind(instance.num, results))
   
-  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = num, instance.n = instance.num, fig.width = 800)
+  PlotAndWrite(results, fig.write = TRUE, fig.prefix = "test-", fig.id = instance.num, instance.n = instance.num, fig.width = 800)
 }
 
 #setwd("Desktop/CS760")
