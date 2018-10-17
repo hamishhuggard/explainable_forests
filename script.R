@@ -353,23 +353,23 @@ rf.labels <- predict(random.forest, dataset[training.data,], type="class")
 # ## evaluate ordinary tree fidelity on test data
 # ordinary.tree.test.fidelity <- mean(ordinary.tree.predictions == rf.predictions)
 
-#####################
-## good boy global ##
-#####################
+#############################
+## chaotic good boy global ##
+#############################
 h8 <- {}
 good.boy.training.d <- {}
-good.boy.global <- function() {
+chaotic.good.boy.global <- function() {
   max.ham <- ncol(dataset)-1
   instance <- dataset[1,]
   hamming.rings <- GetHammingRings(instance, max.ham)
   hamming.disks <- GetHammingDisks(instance, hamming.rings)
   h8 <<- hamming.disks[[max.ham]]
   #for (i in 1:10) {
-  global.training.d <<- sample(1:nrow(h8), nrow(h8)*0.1)
+  global.training.d <- sample(1:nrow(h8), nrow(h8)*0.1)
   global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8[global.training.d,], method="class")
   global.model
 }
-good.boy.eval <- function() {
+chaotic.good.boy.eval <- function() {
   global.model.predictions <- predict(global.model, h8[-global.training.d,], type="class")
   rf.predictions <- predict(random.forest, h8[-global.training.d,], type="class")
   global.model.fidelity <- mean(rf.predictions == global.model.predictions)
@@ -400,9 +400,29 @@ bad.boy.eval <- function() {
   global.model.fidelity
 }
 
+############################
+## lawful good boy global ##
+############################
+lawful.good.boy.global <- function() {
+  max.ham <- ncol(dataset)-1
+  instance <- dataset[1,]
+  hamming.rings <- GetHammingRings(instance, max.ham)
+  hamming.disks <- GetHammingDisks(hamming.rings)
+  h8 <<- hamming.disks[[max.ham]]
+  #for (i in 1:10) {
+  global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8, method="class", maxdepth=5)
+  global.model
+}
+lawful.good.boy.eval <- function() {
+  global.model.predictions <- predict(global.model, h8, type="class")
+  rf.predictions <- predict(random.forest, h8, type="class")
+  global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+  global.model.fidelity
+}
+
 #global.model <- good.boy.global()
-global.model <- bad.boy.global()
-#good.boy.eval()  # requires good.boy.global to be called first
+global.model <- lawful.good.boy.global()
+lawful.good.boy.eval()  # requires good.boy.global to be called first
 #bad.boy.eval()
 fancyRpartPlot(global.model)
 
@@ -557,6 +577,19 @@ explain.a.test.instance <- function(index) {
   png("tree_plt.png")
   fancyRpartPlot(best.expl)
   dev.off()
+}
+
+plot.complexity <- function(trees) {
+  complexity <- data.frame(test.d=0, nodes=0, depth=0)
+  for (i in 1:nrow(trees)) {
+    nodes <- as.numeric(rownames(trees[[i]]$frame))
+    no.nodes <- nrow(trees[[i]]$frame)
+    depth <- max(rpart:::tree.depth(nodes))
+    complexity[i, ] <- c(i, nodes, depth)
+  }
+  ggplot(complexity) +
+    geom_point(aes(test.d, nodes)) +
+    labs(x=expression)
 }
 
 to.explain <- 20 #20th test instance
