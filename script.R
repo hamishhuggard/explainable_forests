@@ -356,21 +356,55 @@ rf.labels <- predict(random.forest, dataset[training.data,], type="class")
 #####################
 ## good boy global ##
 #####################
-max.ham <- ncol(dataset)-1
-instance <- dataset[1,]
-hamming.rings <- GetHammingRings(instance, max.ham)
-hamming.disks <- GetHammingDisks(instance, hamming.rings)
-h8 <- hamming.disks[[max.ham]]
-#for (i in 1:10) {
-global.training.d <- sample(1:nrow(h8), nrow(h8)*0.1)
-global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8[global.training.d,], method="class")
-#global.model.predictions <- predict(global.model, h8[-global.training.d,], type="class")
-#rf.predictions <- predict(random.forest, h8[-global.training.d,], type="class")
-#global.model.fidelity <- mean(rf.predictions == global.model.predictions)
-#print(global.model.fidelity) 
-#}
-#fancyRpartPlot(global.model)
+h8 <- {}
+good.boy.training.d <- {}
+good.boy.global <- function() {
+  max.ham <- ncol(dataset)-1
+  instance <- dataset[1,]
+  hamming.rings <- GetHammingRings(instance, max.ham)
+  hamming.disks <- GetHammingDisks(instance, hamming.rings)
+  h8 <<- hamming.disks[[max.ham]]
+  #for (i in 1:10) {
+  global.training.d <<- sample(1:nrow(h8), nrow(h8)*0.1)
+  global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8[global.training.d,], method="class")
+  global.model
+}
+good.boy.eval <- function() {
+  global.model.predictions <- predict(global.model, h8[-global.training.d,], type="class")
+  rf.predictions <- predict(random.forest, h8[-global.training.d,], type="class")
+  global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+  global.model.fidelity
+}
 
+####################
+## bad boy global ##
+####################
+random.instances <- function(data, no.instances) {
+  instances <- data[c(), ]
+  for (col in names(data)) {
+    instances[1:no.instances, col] <- sample(levels(data[1, col]), no.instances, replace=TRUE) 
+  }
+  instances
+}
+bad.boy.global <- function() {
+  global.training.data <- random.instances(dataset, 1000)
+  rf.training.labels <- predict(random.forest, global.training.data, type="class")
+  global.training.data[,attr(dataset, "class.col")] <- rf.training.labels
+  global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=global.training.data, method="class")
+}
+bad.boy.eval <- function() {
+  global.test.data <- random.instances(dataset, 1000)
+  global.model.predictions <- predict(global.model, global.test.data, type="class")
+  rf.predictions <- predict(random.forest, global.test.data, type="class")
+  global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+  global.model.fidelity
+}
+
+#global.model <- good.boy.global()
+global.model <- bad.boy.global()
+#good.boy.eval()  # requires good.boy.global to be called first
+#bad.boy.eval()
+fancyRpartPlot(global.model)
 
 all.trees.per.instance <- list()
 summary.results = data.frame()
