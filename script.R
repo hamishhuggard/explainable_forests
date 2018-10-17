@@ -168,7 +168,6 @@ EvaluateTree <- function(tree, hamming.disks) {
   results <- data.frame(train.d=integer(0), test.d=integer(0), accuracy=double(0))
   instance.num <- 1
   ## assess fidelity of ordinary tree
-  tree <- ordinary.tree
   # first evaluate the fidelity on the original instance
   rf.prediction <- predict(random.forest, instance, type="class")
   original.prediction <- predict(tree, instance, type="class")
@@ -308,6 +307,16 @@ rf.predictions <- predict(random.forest, dataset[-training.data,], type="class")
 levels(rf.predictions) <- levels(dataset[,attr(dataset, "class.col")])
 rf.accuracy <- mean(rf.predictions == dataset[,attr(dataset, "class.col")][-training.data])
 
+rf.labels <- predict(random.forest, dataset[training.data,], type="class")
+df2 <- dataset[training.data,]
+df2[attr(dataset, "class.col")] <- rf.labels
+global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=df2, method="class", maxdepth=1)
+
+global.model.predictions <- predict(global.model, dataset[-training.data,], type="class")
+global.model.fidelity <- mean(rf.predictions == global.model.predictions)
+
+fancyRpartPlot(global.model)
+
 ## train an ordinary tree on the training data
 ordinary.tree <- rpart::rpart(formula=attr(dataset, "formula"), data=dataset[training.data,], method="class")
 
@@ -321,7 +330,7 @@ ordinary.tree.test.fidelity <- mean(ordinary.tree.predictions == rf.predictions)
 all.trees.per.instance <- list()
 summary.results = data.frame()
 max.ham = 5
-
+instance.num = 45
 for (instance.num in 1:nrow(dataset)) {
   print(paste("Evaluating instance", instance.num, "of", nrow(dataset)))
   instance <- dataset[instance.num,]
@@ -330,8 +339,10 @@ for (instance.num in 1:nrow(dataset)) {
   trees <- TrainTrees(hamming.disks)
   results <- EvaluateTrees(trees, hamming.rings)
   
-  ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
-  results <- rbind(results, ordinary.tree.results)
+  #ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
+  #results <- rbind(results, ordinary.tree.results)
+  global.model.results <- EvaluateTree(global.model, hamming.rings)
+  results <- rbind(results, global.model.results)
   trees <- AssessAccuracy(trees) # adds accuracy as an attribute to each tree
   all.trees.per.instance[[instance.num]] <- trees
   
