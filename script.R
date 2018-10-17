@@ -106,7 +106,19 @@ GetHammingRings <- function(instance, max.ham) {
   return(hamming.rings)
 }
 
-GetHammingDisks <- function(instance, hamming.rings) {
+GetWeights <- function(hamming.rings) {
+  weights <- list()
+  ring.total <- 1
+  for (i in 1:length(hamming.rings)) {
+    ring.total <- ring.total / 2
+    weight <- ring.total / nrow(hamming.rings[[i]])
+    weights[[i]] <- rep(weight, nrow(hamming.rings[[i]]))
+  }
+  weights[[(length(weights)+1)]] <- c(1)
+  weights
+}
+
+GetHammingDisks <- function(hamming.rings) {
   # args: a list (hamming.rings) where list[[i]]
   #   is a dataframe containing all instances exactly
   #   Hamming distance i from instance
@@ -116,13 +128,13 @@ GetHammingDisks <- function(instance, hamming.rings) {
   hamming.disks <- list()
   for (i in 1:length(hamming.rings)) {
     training.data <- plyr::rbind.fill(hamming.rings[1:i])
-    training.data <- rbind(training.data, instance)
     hamming.disks[[i]] <- training.data
   }
   return(hamming.disks)
 }
 
-TrainTrees <- function(hamming.disks) {
+
+TrainTrees <- function(hamming.disks, tree.type="normal", weights=NULL) {
   # args: a list (hamming.disks), where list[[i]]
   #   is a dataframe containing all instances at most
   #   Hamming distance i from an initial instance
@@ -138,7 +150,19 @@ TrainTrees <- function(hamming.disks) {
     if (length(unique(training.data[,class.col])) == 1) {
       trees[[i]] <- unique(training.data[,class.col]) # if there was only one label, store that
     } else {
-      trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", minsplit=1, minbucket=1, cp=0, maxdepth=30)
+      if (tree.type=="normal") {
+        trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class")
+      } else if (tree.type=="full explain") {
+        trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, method="class", minsplit=1, minbucket=1, cp=0, maxdepth=30)
+      } else if (tree.type=="fancy") {
+        if (i==1) {
+          all.weights <- weights[[1]]
+        } else {
+          all.weights <- c(all.weights, weights[[i]])
+        }
+        environment(class.formula) <- environment()
+        trees[[i]] <- rpart::rpart(formula=class.formula, data=training.data, weights=all.weights, method="class", minsplit=1, minbucket=1, cp=0, maxdepth=5, )
+      }
     }
   }
   return(trees)
@@ -356,8 +380,9 @@ for (instance.num in 1:nrow(dataset)) {
   print(paste("Evaluating instance", instance.num, "of", nrow(dataset)))
   instance <- dataset[instance.num,]
   hamming.rings <- GetHammingRings(instance, max.ham)
-  hamming.disks <- GetHammingDisks(instance, hamming.rings)
-  trees <- TrainTrees(hamming.disks)
+  weights <- GetWeights(hamming.rings)
+  hamming.disks <- GetHammingDisks(hamming.rings)
+  trees <- TrainTrees(hamming.disks, tree.type="fancy", weights=weights) # or tree.type="full explain"
   results <- EvaluateTrees(trees, hamming.rings)
   
   #ordinary.tree.results <- EvaluateTree(ordinary.tree, hamming.rings)
