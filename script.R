@@ -118,7 +118,8 @@ GetWeights <- function(hamming.rings) {
   weights
 }
 
-GetHammingDisks <- function(hamming.rings) {
+
+GetHammingDisks <- function(instance, hamming.rings) {
   # args: a list (hamming.rings) where list[[i]]
   #   is a dataframe containing all instances exactly
   #   Hamming distance i from instance
@@ -128,6 +129,7 @@ GetHammingDisks <- function(hamming.rings) {
   hamming.disks <- list()
   for (i in 1:length(hamming.rings)) {
     training.data <- plyr::rbind.fill(hamming.rings[1:i])
+    training.data <- rbind(training.data, instance)
     hamming.disks[[i]] <- training.data
   }
   return(hamming.disks)
@@ -407,7 +409,7 @@ lawful.good.boy.global <- function() {
   max.ham <- ncol(dataset)-1
   instance <- dataset[1,]
   hamming.rings <- GetHammingRings(instance, max.ham)
-  hamming.disks <- GetHammingDisks(hamming.rings)
+  hamming.disks <- GetHammingDisks(instance, hamming.rings)
   h8 <<- hamming.disks[[max.ham]]
   #for (i in 1:10) {
   global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8, method="class", maxdepth=5)
@@ -435,7 +437,7 @@ for (instance.num in 1:nrow(dataset)) {
   instance <- dataset[instance.num,]
   hamming.rings <- GetHammingRings(instance, max.ham)
   weights <- GetWeights(hamming.rings)
-  hamming.disks <- GetHammingDisks(hamming.rings)
+  hamming.disks <- GetHammingDisks(instance, hamming.rings)
   trees <- TrainTrees(hamming.disks, tree.type="fancy", weights=weights) # or tree.type="full explain"
   results <- EvaluateTrees(trees, hamming.rings)
   
