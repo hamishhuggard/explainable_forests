@@ -332,10 +332,11 @@ rf.labels <- predict(random.forest, dataset[training.data,], type="class")
 #####################
 ## good boy global ##
 #####################
+max.ham <- ncol(dataset)-1
 instance <- dataset[1,]
 hamming.rings <- GetHammingRings(instance, max.ham)
 hamming.disks <- GetHammingDisks(instance, hamming.rings)
-h8 <- hamming.disks[[8]]
+h8 <- hamming.disks[[max.ham]]
 #for (i in 1:10) {
 global.training.d <- sample(1:nrow(h8), nrow(h8)*0.1)
 global.model <- rpart::rpart(formula=attr(dataset, "formula"), data=h8[global.training.d,], method="class")
