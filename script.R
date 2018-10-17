@@ -267,6 +267,7 @@ PlotAndWrite <- function(results, fig.write = FALSE, fig.id = 0, fig.dir = "plot
   }
 }
 
+baseline <- 0.8460231
 PlotResults <- function(results, instance.n=1) {
   # args: a dataframe (results), with columns train.d, accuracy and test.d
   # returns: a ggplot of accuracy against train.d, with a line for each test.d
@@ -276,7 +277,8 @@ PlotResults <- function(results, instance.n=1) {
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     labs(title = paste("Instance",instance.n), x = "Testing HD", 
-         y = "Fidelity", color = "Training HD")
+         y = "Fidelity", color = "Training HD") +
+    geom_line(data=data.frame(x=c(0,max.ham),y=c(baseline,baseline)), aes(x,y), linetype="dashed", colour="black")
   print(plt)
 }
 
