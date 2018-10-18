@@ -276,9 +276,11 @@ PlotResults <- function(results, instance.n=1) {
     scale_color_brewer(palette="Spectral") +
     geom_line(aes(test.d, accuracy, colour = train.d, group = train.d)) +
     geom_point(aes(test.d, accuracy, colour = train.d, group = train.d)) +
-    labs(title = paste("Instance",instance.n), x = "Testing HD", 
-         y = "Fidelity", color = "Training HD") +
-    geom_line(data=data.frame(x=c(0,max.ham),y=c(baseline,baseline)), aes(x,y), linetype="dashed", colour="black")
+    labs(title = paste("Instance",instance.n), x = expression('Distance from '~x[0]), 
+         y = "Fidelity", color = "Radius of Training Set") +
+    geom_line(data=data.frame(x=c(0,max.ham),y=c(baseline,baseline)), aes(x,y), linetype="dashed", colour="black") +
+    theme(legend.position="bottom") +
+    theme(plot.title = element_text(hjust = 0.5))
   print(plt)
 }
 
