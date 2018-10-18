@@ -587,15 +587,22 @@ explain.a.test.instance <- function(index) {
 
 plot.complexity <- function(trees) {
   complexity <- data.frame(test.d=0, nodes=0, depth=0)
-  for (i in 1:nrow(trees)) {
+  for (i in 1:length(trees)) {
     nodes <- as.numeric(rownames(trees[[i]]$frame))
     no.nodes <- nrow(trees[[i]]$frame)
     depth <- max(rpart:::tree.depth(nodes))
-    complexity[i, ] <- c(i, nodes, depth)
+    complexity[i, ] <- c(i, no.nodes, depth)
   }
-  ggplot(complexity) +
+  complexity$test.d <- factor(complexity$test.d)
+  plt.1 <- ggplot(complexity) +
+    geom_point(aes(test.d, depth)) +
+    labs(x="Radius of Training Set", y="Tree Height") +
+    geom_line(data=data.frame(x=c(1,length(trees)), y=c(5,5)), aes(x,y), linetype="dashed", colour="red") +
+    expand_limits(y=0)
+  plt.2 <- ggplot(complexity) +
     geom_point(aes(test.d, nodes)) +
-    labs(x=expression)
+    labs(x="Radius of Training Set", y="Number of Nodes")
+  grid.arrange(arrangeGrob(plt.1, plt.2), ncol=1, nrow=2, heights=c(20, 1))
 }
 
 to.explain <- 20 #20th test instance
